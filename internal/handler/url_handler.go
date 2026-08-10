@@ -33,7 +33,7 @@ func (h *URLHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(
 			w,
-			"invalid request",
+			"invalid JSON",
 			http.StatusBadRequest,
 		)
 
@@ -48,8 +48,8 @@ func (h *URLHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(
 			w,
-			"could not create short URL",
-			http.StatusInternalServerError,
+			err.Error(),
+			http.StatusBadRequest,
 		)
 
 		return

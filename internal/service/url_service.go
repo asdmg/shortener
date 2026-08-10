@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-
+	"errors"
+	"net/url"
 	"shortener/internal/model"
 	"shortener/internal/repository"
+	"strings"
 )
 
 type URLService struct {
@@ -27,6 +29,10 @@ func (s *URLService) Create(
 	originalURL string,
 ) (*model.URL, error) {
 
+	if err := validateURL(originalURL); err != nil {
+		return nil, err
+	}
+
 	code, err := generateCode(6)
 
 	if err != nil {
@@ -35,7 +41,7 @@ func (s *URLService) Create(
 
 	url := &model.URL{
 		Code:        code,
-		OriginalURL: originalURL,
+		OriginalURL: strings.TrimSpace(originalURL),
 	}
 
 	if err := s.repository.Create(ctx, url); err != nil {
@@ -65,4 +71,28 @@ func (s *URLService) FindByCode(
 		ctx,
 		code,
 	)
+}
+
+func validateURL(value string) error {
+	value = strings.TrimSpace(value)
+
+	if value == "" {
+		return errors.New("URL cannot be empty")
+	}
+
+	parsedURL, err := url.ParseRequestURI(value)
+
+	if err != nil {
+		return errors.New("invalid URL")
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return errors.New("URL must use http or https")
+	}
+
+	if parsedURL.Host == "" {
+		return errors.New("URL must contain a host")
+	}
+
+	return nil
 }
