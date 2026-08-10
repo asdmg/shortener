@@ -1,11 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
 	"shortener/internal/database"
+	"shortener/internal/handler"
+	"shortener/internal/repository"
+	"shortener/internal/service"
 )
 
 func main() {
@@ -18,13 +20,29 @@ func main() {
 
 	defer db.Close()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "URL Shortener")
-	})
+	urlRepository := repository.NewURLRepository(db)
 
-	fmt.Println("Server running on :8080")
+	urlService := service.NewURLService(
+		urlRepository,
+	)
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	urlHandler := handler.NewURLHandler(
+		urlService,
+	)
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc(
+		"POST /api/urls",
+		urlHandler.Create,
+	)
+
+	log.Println("Server running on :8080")
+
+	if err := http.ListenAndServe(
+		":8080",
+		mux,
+	); err != nil {
 		log.Fatal(err)
 	}
 }
