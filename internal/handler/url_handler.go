@@ -70,3 +70,28 @@ func (h *URLHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 }
+
+func (h *URLHandler) Redirect(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	code := r.PathValue("code")
+
+	url, err := h.service.FindByCode(
+		r.Context(),
+		code,
+	)
+
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	http.Redirect(
+		w,
+		r,
+		url.OriginalURL,
+		http.StatusFound,
+	)
+}

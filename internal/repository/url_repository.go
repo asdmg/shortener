@@ -41,3 +41,42 @@ func (r *URLRepository) Create(
 		&url.CreatedAt,
 	)
 }
+
+func (r *URLRepository) FindByCode(
+	ctx context.Context,
+	code string,
+) (*model.URL, error) {
+
+	query := `
+		SELECT
+			id,
+			code,
+			original_url,
+			clicks,
+			created_at,
+			expires_at
+		FROM urls
+		WHERE code = $1
+	`
+
+	url := &model.URL{}
+
+	err := r.db.QueryRowContext(
+		ctx,
+		query,
+		code,
+	).Scan(
+		&url.ID,
+		&url.Code,
+		&url.OriginalURL,
+		&url.Clicks,
+		&url.CreatedAt,
+		&url.ExpiresAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return url, nil
+}

@@ -37,6 +37,11 @@ func main() {
 		urlHandler.Create,
 	)
 
+	mux.HandleFunc(
+		"GET /{code}",
+		urlHandler.Redirect,
+	)
+
 	log.Println("Server running on :8080")
 
 	if err := http.ListenAndServe(

@@ -55,3 +55,14 @@ func generateCode(size int) (string, error) {
 
 	return base64.RawURLEncoding.EncodeToString(bytes)[:size], nil
 }
+
+func (s *URLService) FindByCode(
+	ctx context.Context,
+	code string,
+) (*model.URL, error) {
+
+	return s.repository.FindByCode(
+		ctx,
+		code,
+	)
+}
