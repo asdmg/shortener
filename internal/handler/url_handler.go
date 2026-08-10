@@ -46,10 +46,11 @@ func (h *URLHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var request createURLRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(
+		writeError(
 			w,
-			"invalid JSON",
 			http.StatusBadRequest,
+			"invalid_json",
+			"the request body contains invalid JSON",
 		)
 
 		return
@@ -63,19 +64,21 @@ func (h *URLHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 
 		if errors.Is(err, service.ErrInvalidURL) {
-			http.Error(
+			writeError(
 				w,
-				"invalid URL",
 				http.StatusBadRequest,
+				"invalid_url",
+				"the provided URL is invalid",
 			)
 
 			return
 		}
 
-		http.Error(
+		writeError(
 			w,
-			"internal server error",
 			http.StatusInternalServerError,
+			"internal_error",
+			"an internal error occurred",
 		)
 
 		return
@@ -87,14 +90,11 @@ func (h *URLHandler) Create(w http.ResponseWriter, r *http.Request) {
 			url.Code,
 	}
 
-	w.Header().Set(
-		"Content-Type",
-		"application/json",
+	writeJSON(
+		w,
+		http.StatusCreated,
+		response,
 	)
-
-	w.WriteHeader(http.StatusCreated)
-
-	json.NewEncoder(w).Encode(response)
 }
 
 func (h *URLHandler) Redirect(

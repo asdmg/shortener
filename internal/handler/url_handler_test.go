@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"shortener/internal/model"
@@ -119,6 +120,21 @@ func TestURLHandler_Create_InvalidJSON(t *testing.T) {
 		recorder,
 		req,
 	)
+
+	var response ErrorResponse
+
+	if err := json.NewDecoder(
+		recorder.Body,
+	).Decode(&response); err != nil {
+		t.Fatal(err)
+	}
+
+	if response.Error != "invalid_json" {
+		t.Fatalf(
+			"expected error invalid_json, got %s",
+			response.Error,
+		)
+	}
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf(
