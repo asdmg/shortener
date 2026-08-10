@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+var (
+	ErrInvalidURL = errors.New("invalid URL")
+)
+
 type URLService struct {
 	repository *repository.URLRepository
 }
@@ -77,21 +81,22 @@ func validateURL(value string) error {
 	value = strings.TrimSpace(value)
 
 	if value == "" {
-		return errors.New("URL cannot be empty")
+		return ErrInvalidURL
 	}
 
 	parsedURL, err := url.ParseRequestURI(value)
 
 	if err != nil {
-		return errors.New("invalid URL")
+		return ErrInvalidURL
 	}
 
-	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return errors.New("URL must use http or https")
+	if parsedURL.Scheme != "http" &&
+		parsedURL.Scheme != "https" {
+		return ErrInvalidURL
 	}
 
 	if parsedURL.Host == "" {
-		return errors.New("URL must contain a host")
+		return ErrInvalidURL
 	}
 
 	return nil

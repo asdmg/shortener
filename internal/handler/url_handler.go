@@ -1,17 +1,32 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"shortener/internal/model"
 
 	"shortener/internal/service"
 )
 
 type URLHandler struct {
-	service *service.URLService
+	service URLService
 }
 
-func NewURLHandler(service *service.URLService) *URLHandler {
+type URLService interface {
+	Create(
+		ctx context.Context,
+		originalURL string,
+	) (*model.URL, error)
+
+	FindByCode(
+		ctx context.Context,
+		code string,
+	) (*model.URL, error)
+}
+
+func NewURLHandler(service URLService) *URLHandler {
 	return &URLHandler{
 		service: service,
 	}
@@ -46,10 +61,21 @@ func (h *URLHandler) Create(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
+
+		if errors.Is(err, service.ErrInvalidURL) {
+			http.Error(
+				w,
+				"invalid URL",
+				http.StatusBadRequest,
+			)
+
+			return
+		}
+
 		http.Error(
 			w,
-			err.Error(),
-			http.StatusBadRequest,
+			"internal server error",
+			http.StatusInternalServerError,
 		)
 
 		return
