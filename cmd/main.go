@@ -38,6 +38,11 @@ func main() {
 	)
 
 	mux.HandleFunc(
+		"GET /api/urls/{code}",
+		urlHandler.Get,
+	)
+
+	mux.HandleFunc(
 		"GET /{code}",
 		urlHandler.Redirect,
 	)

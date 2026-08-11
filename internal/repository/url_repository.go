@@ -37,6 +37,7 @@ func (r *URLRepository) Create(
 		query,
 		url.Code,
 		url.OriginalURL,
+		url.ExpiresAt,
 	).Scan(
 		&url.ID,
 		&url.CreatedAt,

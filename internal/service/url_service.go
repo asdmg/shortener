@@ -14,9 +14,10 @@ import (
 )
 
 var (
-	ErrInvalidURL  = errors.New("invalid URL")
-	ErrURLNotFound = errors.New("url not found")
-	ErrURLExpired  = errors.New("url expired")
+	ErrInvalidURL        = errors.New("invalid URL")
+	ErrURLNotFound       = errors.New("url not found")
+	ErrURLExpired        = errors.New("url expired")
+	ErrInvalidExpiration = errors.New("invalid expiration date")
 )
 
 type URLService struct {
@@ -26,7 +27,6 @@ type URLService struct {
 func NewURLService(
 	repository *repository.URLRepository,
 ) *URLService {
-
 	return &URLService{
 		repository: repository,
 	}
@@ -40,6 +40,11 @@ func (s *URLService) Create(
 
 	if err := validateURL(originalURL); err != nil {
 		return nil, err
+	}
+
+	if expiresAt != nil &&
+		!expiresAt.After(time.Now()) {
+		return nil, ErrInvalidExpiration
 	}
 
 	code, err := generateCode(6)
@@ -100,6 +105,7 @@ func (s *URLService) FindByCode(
 }
 
 func validateURL(value string) error {
+
 	value = strings.TrimSpace(value)
 
 	if value == "" {

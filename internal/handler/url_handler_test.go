@@ -8,12 +8,14 @@ import (
 	"shortener/internal/model"
 	"strings"
 	"testing"
+	"time"
 )
 
 type mockURLService struct {
 	createFunc func(
 		ctx context.Context,
 		originalURL string,
+		expiresAt *time.Time,
 	) (*model.URL, error)
 
 	findByCodeFunc func(
@@ -30,9 +32,10 @@ type mockURLService struct {
 func (m *mockURLService) Create(
 	ctx context.Context,
 	originalURL string,
+	expiresAt *time.Time,
 ) (*model.URL, error) {
 
-	return m.createFunc(ctx, originalURL)
+	return m.createFunc(ctx, originalURL, expiresAt)
 }
 
 func (m *mockURLService) FindByCode(
@@ -60,12 +63,14 @@ func TestURLHandler_Create(t *testing.T) {
 		createFunc: func(
 			ctx context.Context,
 			originalURL string,
+			expiresAt *time.Time,
 		) (*model.URL, error) {
 
 			return &model.URL{
 				ID:          1,
 				Code:        "abc123",
 				OriginalURL: originalURL,
+				ExpiresAt:   expiresAt,
 			}, nil
 		},
 	}
@@ -107,6 +112,7 @@ func TestURLHandler_Create_InvalidJSON(t *testing.T) {
 		createFunc: func(
 			ctx context.Context,
 			originalURL string,
+			expiresAt *time.Time,
 		) (*model.URL, error) {
 
 			t.Fatal("Create should not be called")
