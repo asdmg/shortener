@@ -3,16 +3,23 @@ package main
 import (
 	"log"
 	"net/http"
+	"shortener/internal/config"
+	"shortener/internal/service"
 
 	"shortener/internal/database"
 	"shortener/internal/handler"
 	"shortener/internal/repository"
-	"shortener/internal/service"
 )
 
 func main() {
 
-	db, err := database.NewPostgres()
+	cfg, err := config.Load()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := database.NewPostgres(cfg.Database)
 
 	if err != nil {
 		log.Fatal(err)
@@ -47,10 +54,12 @@ func main() {
 		urlHandler.Redirect,
 	)
 
-	log.Println("Server running on :8080")
+	addr := ":" + cfg.App.Port
+
+	log.Println("Server running on", addr)
 
 	if err := http.ListenAndServe(
-		":8080",
+		addr,
 		mux,
 	); err != nil {
 		log.Fatal(err)
