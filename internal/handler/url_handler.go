@@ -24,6 +24,11 @@ type URLService interface {
 		ctx context.Context,
 		code string,
 	) (*model.URL, error)
+
+	IncrementClicks(
+		ctx context.Context,
+		code string,
+	) error
 }
 
 func NewURLHandler(service URLService) *URLHandler {
@@ -111,6 +116,21 @@ func (h *URLHandler) Redirect(
 
 	if err != nil {
 		http.NotFound(w, r)
+		return
+	}
+
+	if err := h.service.IncrementClicks(
+		r.Context(),
+		code,
+	); err != nil {
+
+		writeError(
+			w,
+			http.StatusInternalServerError,
+			"internal_error",
+			"an internal error occurred",
+		)
+
 		return
 	}
 

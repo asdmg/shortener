@@ -101,3 +101,14 @@ func validateURL(value string) error {
 
 	return nil
 }
+
+func (s *URLService) IncrementClicks(
+	ctx context.Context,
+	code string,
+) error {
+
+	return s.repository.IncrementClicks(
+		ctx,
+		code,
+	)
+}

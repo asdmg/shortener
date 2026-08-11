@@ -20,6 +20,11 @@ type mockURLService struct {
 		ctx context.Context,
 		code string,
 	) (*model.URL, error)
+
+	incrementClicksFunc func(
+		ctx context.Context,
+		code string,
+	) error
 }
 
 func (m *mockURLService) Create(
@@ -36,6 +41,17 @@ func (m *mockURLService) FindByCode(
 ) (*model.URL, error) {
 
 	return m.findByCodeFunc(ctx, code)
+}
+
+func (m *mockURLService) IncrementClicks(
+	ctx context.Context,
+	code string,
+) error {
+
+	return m.incrementClicksFunc(
+		ctx,
+		code,
+	)
 }
 
 func TestURLHandler_Create(t *testing.T) {

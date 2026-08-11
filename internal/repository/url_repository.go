@@ -80,3 +80,23 @@ func (r *URLRepository) FindByCode(
 
 	return url, nil
 }
+
+func (r *URLRepository) IncrementClicks(
+	ctx context.Context,
+	code string,
+) error {
+
+	query := `
+		UPDATE urls
+		SET clicks = clicks + 1
+		WHERE code = $1
+	`
+
+	_, err := r.db.ExecContext(
+		ctx,
+		query,
+		code,
+	)
+
+	return err
+}
