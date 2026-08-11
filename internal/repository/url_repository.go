@@ -25,9 +25,10 @@ func (r *URLRepository) Create(
 	query := `
 		INSERT INTO urls (
 			code,
-			original_url
+			original_url,
+		    expires_at
 		)
-		VALUES ($1, $2)
+		VALUES ($1, $2, $3)
 		RETURNING id, created_at
 	`
 

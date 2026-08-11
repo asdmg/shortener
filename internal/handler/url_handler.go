@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"shortener/internal/model"
+	"time"
 
 	"shortener/internal/service"
 )
@@ -38,7 +39,8 @@ func NewURLHandler(service URLService) *URLHandler {
 }
 
 type createURLRequest struct {
-	URL string `json:"url"`
+	URL       string     `json:"url"`
+	ExpiresAt *time.Time `json:"expires_at"`
 }
 
 type createURLResponse struct {
@@ -115,7 +117,36 @@ func (h *URLHandler) Redirect(
 	)
 
 	if err != nil {
-		http.NotFound(w, r)
+
+		if errors.Is(err, service.ErrURLNotFound) {
+			writeError(
+				w,
+				http.StatusNotFound,
+				"url_not_found",
+				"the requested URL was not found",
+			)
+
+			return
+		}
+
+		if errors.Is(err, service.ErrURLExpired) {
+			writeError(
+				w,
+				http.StatusGone,
+				"url_expired",
+				"the requested URL has expired",
+			)
+
+			return
+		}
+
+		writeError(
+			w,
+			http.StatusInternalServerError,
+			"internal_error",
+			"an internal error occurred",
+		)
+
 		return
 	}
 
