@@ -1,17 +1,18 @@
 package database
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
+	"time"
 
 	"shortener/internal/config"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func NewPostgres(
 	cfg config.DatabaseConfig,
-) (*sql.DB, error) {
+) (*pgxpool.Pool, error) {
 
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
@@ -22,15 +23,37 @@ func NewPostgres(
 		cfg.Name,
 	)
 
-	db, err := sql.Open("pgx", dsn)
+	poolConfig, err := pgxpool.ParseConfig(dsn)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err := db.Ping(); err != nil {
+	poolConfig.MinConns = 2
+	poolConfig.MaxConns = 10
+	poolConfig.MaxConnLifetime = 30 * time.Minute
+	poolConfig.MaxConnIdleTime = 5 * time.Minute
+
+	pool, err := pgxpool.NewWithConfig(
+		context.Background(),
+		poolConfig,
+	)
+
+	if err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		5*time.Second,
+	)
+
+	defer cancel()
+
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		return nil, err
+	}
+
+	return pool, nil
 }

@@ -2,16 +2,16 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-
 	"shortener/internal/model"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type URLRepository struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewURLRepository(db *sql.DB) *URLRepository {
+func NewURLRepository(db *pgxpool.Pool) *URLRepository {
 	return &URLRepository{
 		db: db,
 	}
@@ -32,7 +32,7 @@ func (r *URLRepository) Create(
 		RETURNING id, created_at
 	`
 
-	return r.db.QueryRowContext(
+	return r.db.QueryRow(
 		ctx,
 		query,
 		url.Code,
@@ -63,7 +63,7 @@ func (r *URLRepository) FindByCode(
 
 	url := &model.URL{}
 
-	err := r.db.QueryRowContext(
+	err := r.db.QueryRow(
 		ctx,
 		query,
 		code,
@@ -94,7 +94,7 @@ func (r *URLRepository) IncrementClicks(
 		WHERE code = $1
 	`
 
-	_, err := r.db.ExecContext(
+	_, err := r.db.Exec(
 		ctx,
 		query,
 		code,
