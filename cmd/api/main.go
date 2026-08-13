@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"shortener/internal/config"
-	"shortener/internal/service"
-
 	"shortener/internal/database"
 	"shortener/internal/handler"
 	"shortener/internal/repository"
+	"shortener/internal/service"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -57,12 +61,61 @@ func main() {
 
 	addr := ":" + cfg.App.Port
 
-	log.Println("Server running on", addr)
-
-	if err := http.ListenAndServe(
-		addr,
-		mux,
-	); err != nil {
-		log.Fatal(err)
+	server := &http.Server{
+		Addr:    addr,
+		Handler: mux,
 	}
+
+	stop := make(chan os.Signal, 1)
+
+	signal.Notify(
+		stop,
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+
+	serverErr := make(chan error, 1)
+
+	go func() {
+
+		log.Println("Server running on", addr)
+
+		if err := server.ListenAndServe(); err != nil &&
+			err != http.ErrServerClosed {
+
+			serverErr <- err
+		}
+
+	}()
+
+	select {
+
+	case err := <-serverErr:
+
+		log.Fatalf(
+			"server error: %v",
+			err,
+		)
+
+	case <-stop:
+
+		log.Println("Shutting down server...")
+	}
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
+
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+
+		log.Printf(
+			"server shutdown error: %v",
+			err,
+		)
+	}
+
+	log.Println("Server stopped")
 }
