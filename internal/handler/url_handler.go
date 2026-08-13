@@ -31,6 +31,7 @@ type createURLResponse struct {
 
 type URLHandler struct {
 	service URLService
+	baseURL string
 }
 
 type URLService interface {
@@ -51,9 +52,10 @@ type URLService interface {
 	) error
 }
 
-func NewURLHandler(service URLService) *URLHandler {
+func NewURLHandler(service URLService, baseURL string) *URLHandler {
 	return &URLHandler{
 		service: service,
+		baseURL: baseURL,
 	}
 }
 
@@ -174,9 +176,8 @@ func (h *URLHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := createURLResponse{
-		Code: url.Code,
-		ShortURL: "http://localhost:8080/" +
-			url.Code,
+		Code:     url.Code,
+		ShortURL: h.baseURL + "/" + url.Code,
 	}
 
 	writeJSON(

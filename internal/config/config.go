@@ -27,7 +27,9 @@ type Config struct {
 
 func Load() (*Config, error) {
 
-	_ = godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		_ = godotenv.Load("../../.env")
+	}
 
 	config := &Config{}
 

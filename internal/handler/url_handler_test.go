@@ -75,7 +75,7 @@ func TestURLHandler_Create(t *testing.T) {
 		},
 	}
 
-	handler := NewURLHandler(mockService)
+	handler := NewURLHandler(mockService, "http://localhost:8080")
 
 	req := httptest.NewRequest(
 		"POST",
@@ -121,7 +121,7 @@ func TestURLHandler_Create_InvalidJSON(t *testing.T) {
 		},
 	}
 
-	handler := NewURLHandler(mockService)
+	handler := NewURLHandler(mockService, "http://localhost:8080")
 
 	req := httptest.NewRequest(
 		"POST",

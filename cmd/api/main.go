@@ -35,6 +35,7 @@ func main() {
 
 	urlHandler := handler.NewURLHandler(
 		urlService,
+		cfg.App.BaseURL,
 	)
 
 	mux := http.NewServeMux()
