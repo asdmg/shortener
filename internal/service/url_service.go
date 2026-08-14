@@ -14,18 +14,38 @@ import (
 )
 
 var (
-	ErrInvalidURL        = errors.New("invalid URL")
-	ErrURLNotFound       = errors.New("url not found")
-	ErrURLExpired        = errors.New("url expired")
-	ErrInvalidExpiration = errors.New("invalid expiration date")
+	ErrInvalidURL           = errors.New("invalid URL")
+	ErrURLNotFound          = errors.New("url not found")
+	ErrURLExpired           = errors.New("url expired")
+	ErrInvalidExpiration    = errors.New("invalid expiration date")
+	ErrCodeGenerationFailed = errors.New(
+		"failed to generate unique URL code",
+	)
 )
 
+type URLRepository interface {
+	Create(
+		ctx context.Context,
+		url *model.URL,
+	) error
+
+	FindByCode(
+		ctx context.Context,
+		code string,
+	) (*model.URL, error)
+
+	IncrementClicks(
+		ctx context.Context,
+		code string,
+	) error
+}
+
 type URLService struct {
-	repository *repository.URLRepository
+	repository URLRepository
 }
 
 func NewURLService(
-	repository *repository.URLRepository,
+	repository URLRepository,
 ) *URLService {
 	return &URLService{
 		repository: repository,
@@ -42,28 +62,40 @@ func (s *URLService) Create(
 		return nil, err
 	}
 
-	if expiresAt != nil &&
-		!expiresAt.After(time.Now()) {
-		return nil, ErrInvalidExpiration
+	const maxCreateAttempts = 5
+
+	for attempt := 0; attempt < maxCreateAttempts; attempt++ {
+
+		code, err := generateCode(6)
+
+		if err != nil {
+			return nil, err
+		}
+
+		url := &model.URL{
+			Code:        code,
+			OriginalURL: strings.TrimSpace(originalURL),
+			ExpiresAt:   expiresAt,
+		}
+
+		err = s.repository.Create(
+			ctx,
+			url,
+		)
+
+		if err == nil {
+			return url, nil
+		}
+
+		if !errors.Is(
+			err,
+			repository.ErrCodeAlreadyExists,
+		) {
+			return nil, err
+		}
 	}
 
-	code, err := generateCode(6)
-
-	if err != nil {
-		return nil, err
-	}
-
-	url := &model.URL{
-		Code:        code,
-		OriginalURL: strings.TrimSpace(originalURL),
-		ExpiresAt:   expiresAt,
-	}
-
-	if err := s.repository.Create(ctx, url); err != nil {
-		return nil, err
-	}
-
-	return url, nil
+	return nil, ErrCodeGenerationFailed
 }
 
 func generateCode(size int) (string, error) {

@@ -44,6 +44,18 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	healthHandler := handler.NewHealthHandler(db)
+
+	mux.HandleFunc(
+		"GET /health",
+		healthHandler.Health,
+	)
+
+	mux.HandleFunc(
+		"GET /ready",
+		healthHandler.Ready,
+	)
+
 	mux.HandleFunc(
 		"POST /api/urls",
 		urlHandler.Create,

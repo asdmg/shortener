@@ -2,9 +2,15 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"shortener/internal/model"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+var ErrCodeAlreadyExists = errors.New(
+	"code already exists",
 )
 
 type URLRepository struct {
@@ -32,7 +38,7 @@ func (r *URLRepository) Create(
 		RETURNING id, created_at
 	`
 
-	return r.db.QueryRow(
+	err := r.db.QueryRow(
 		ctx,
 		query,
 		url.Code,
@@ -42,6 +48,21 @@ func (r *URLRepository) Create(
 		&url.ID,
 		&url.CreatedAt,
 	)
+
+	if err != nil {
+
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) &&
+			pgErr.Code == "23505" {
+
+			return ErrCodeAlreadyExists
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func (r *URLRepository) FindByCode(

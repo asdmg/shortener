@@ -13,30 +13,14 @@ import (
 
 func TestURLRepository_Create(t *testing.T) {
 
-	cfg, err := config.Load()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	db, err := database.NewPostgres(
-		cfg.Database,
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer db.Close()
-
-	repository := NewURLRepository(db)
+	repository := setupRepository(t)
 
 	url := &model.URL{
 		Code:        testCode(t),
 		OriginalURL: "https://google.com",
 	}
 
-	err = repository.Create(
+	err := repository.Create(
 		context.Background(),
 		url,
 	)
@@ -56,40 +40,23 @@ func TestURLRepository_Create(t *testing.T) {
 
 func TestURLRepository_FindByCode(t *testing.T) {
 
-	cfg, err := config.Load()
+	repository := setupRepository(t)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	db, err := database.NewPostgres(
-		cfg.Database,
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer db.Close()
-
-	repository := NewURLRepository(db)
+	ctx := context.Background()
 
 	url := &model.URL{
 		Code:        testCode(t),
 		OriginalURL: "https://google.com",
 	}
 
-	err = repository.Create(
-		context.Background(),
-		url,
-	)
+	err := repository.Create(ctx, url)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	foundURL, err := repository.FindByCode(
-		context.Background(),
+		ctx,
 		url.Code,
 	)
 
@@ -116,23 +83,7 @@ func TestURLRepository_FindByCode(t *testing.T) {
 
 func TestURLRepository_IncrementClicks(t *testing.T) {
 
-	cfg, err := config.Load()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	db, err := database.NewPostgres(
-		cfg.Database,
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer db.Close()
-
-	repository := NewURLRepository(db)
+	repository := setupRepository(t)
 
 	ctx := context.Background()
 
@@ -141,7 +92,7 @@ func TestURLRepository_IncrementClicks(t *testing.T) {
 		OriginalURL: "https://google.com",
 	}
 
-	err = repository.Create(ctx, url)
+	err := repository.Create(ctx, url)
 
 	if err != nil {
 		t.Fatal(err)
@@ -182,23 +133,7 @@ func TestURLRepository_IncrementClicks(t *testing.T) {
 
 func TestURLRepository_IncrementClicksConcurrent(t *testing.T) {
 
-	cfg, err := config.Load()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	db, err := database.NewPostgres(
-		cfg.Database,
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer db.Close()
-
-	repository := NewURLRepository(db)
+	repository := setupRepository(t)
 
 	ctx := context.Background()
 
@@ -233,7 +168,6 @@ func TestURLRepository_IncrementClicksConcurrent(t *testing.T) {
 					err,
 				)
 			}
-
 		}()
 	}
 
@@ -249,7 +183,6 @@ func TestURLRepository_IncrementClicksConcurrent(t *testing.T) {
 	}
 
 	if foundURL.Clicks != numberOfClicks {
-
 		t.Fatalf(
 			"expected %d clicks, got %d",
 			numberOfClicks,
@@ -269,4 +202,29 @@ func testCode(t *testing.T) string {
 	}
 
 	return hex.EncodeToString(bytes)[:6]
+}
+
+func setupRepository(t *testing.T) *URLRepository {
+
+	t.Helper()
+
+	cfg, err := config.Load()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := database.NewPostgres(
+		cfg.Database,
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		db.Close()
+	})
+
+	return NewURLRepository(db)
 }

@@ -1,6 +1,109 @@
 package service
 
-import "testing"
+import (
+	"context"
+	"errors"
+	"shortener/internal/model"
+	"shortener/internal/repository"
+	"testing"
+)
+
+type fakeURLRepository struct {
+	createCalls     int
+	failFirstCreate bool
+}
+
+func (f *fakeURLRepository) Create(
+	ctx context.Context,
+	url *model.URL,
+) error {
+
+	f.createCalls++
+
+	if f.failFirstCreate && f.createCalls == 1 {
+		return repository.ErrCodeAlreadyExists
+	}
+
+	return nil
+}
+
+func (f *fakeURLRepository) FindByCode(
+	ctx context.Context,
+	code string,
+) (*model.URL, error) {
+
+	return nil, errors.New("not implemented")
+}
+
+func (f *fakeURLRepository) IncrementClicks(
+	ctx context.Context,
+	code string,
+) error {
+
+	return nil
+}
+
+func TestURLService_Create(t *testing.T) {
+
+	repository := &fakeURLRepository{}
+
+	service := NewURLService(repository)
+
+	url, err := service.Create(
+		context.Background(),
+		"https://google.com",
+		nil,
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if url == nil {
+		t.Fatal("expected URL")
+	}
+
+	if url.Code == "" {
+		t.Fatal("expected generated code")
+	}
+
+	if repository.createCalls != 1 {
+		t.Fatalf(
+			"expected 1 repository call, got %d",
+			repository.createCalls,
+		)
+	}
+}
+
+func TestURLService_Create_RetryOnCodeCollision(t *testing.T) {
+
+	repository := &fakeURLRepository{
+		failFirstCreate: true,
+	}
+
+	service := NewURLService(repository)
+
+	url, err := service.Create(
+		context.Background(),
+		"https://google.com",
+		nil,
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if url == nil {
+		t.Fatal("expected URL")
+	}
+
+	if repository.createCalls != 2 {
+		t.Fatalf(
+			"expected 2 repository calls, got %d",
+			repository.createCalls,
+		)
+	}
+}
 
 func TestValidateURL(t *testing.T) {
 	tests := []struct {
